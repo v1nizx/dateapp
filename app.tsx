@@ -3,8 +3,8 @@ import { FilterSection } from './components/FilterSection';
 import { PlaceCard } from './components/PlaceCard';
 import { getFilteredPlaces, getRandomPlace, Place } from './data/mockPlaces';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner@2.0.3';
-import { Heart, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+import { Heart, MapPin } from 'lucide-react';
 
 export default function App() {
   const [filters, setFilters] = useState({
@@ -44,7 +44,7 @@ export default function App() {
     setIsLoading(true);
     
     try {
-      // Get filtered places
+      // Usar apenas dados locais
       const filteredPlaces = getFilteredPlaces(filters);
       
       if (filteredPlaces.length === 0) {
@@ -75,6 +75,7 @@ export default function App() {
       };
       
       setCurrentPlace(placeWithImage);
+      
       toast.success('✨ Surpresa preparada! Que tal essa sugestão?');
       
     } catch (error) {
@@ -102,9 +103,9 @@ export default function App() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Roteiro Surpresa
           </h1>
-          <Sparkles className="h-8 w-8 text-purple-500" />
+          <Heart className="h-8 w-8 text-purple-500" />
         </div>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
           Descubra lugares incríveis na sua cidade! Sem indecisão, sem rotina - apenas experiências especiais esperando por vocês.
         </p>
       </header>
@@ -137,15 +138,15 @@ export default function App() {
               <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                 <div className="space-y-2">
                   <div className="text-2xl">🎯</div>
-                  <p><strong>1. Configure</strong><br />Escolha seu orçamento, tipo de rolê e período</p>
+                  <p><strong>1. Filtre</strong><br />Escolha orçamento, tipo e período</p>
                 </div>
                 <div className="space-y-2">
                   <div className="text-2xl">✨</div>
-                  <p><strong>2. Surpreenda-se</strong><br />Clique no botão mágico e deixe a gente decidir</p>
+                  <p><strong>2. Surpreenda-se</strong><br />Receba uma sugestão aleatória</p>
                 </div>
                 <div className="space-y-2">
                   <div className="text-2xl">❤️</div>
-                  <p><strong>3. Aproveitem</strong><br />Sigam a sugestão e criem memórias especiais</p>
+                  <p><strong>3. Aproveitem</strong><br />Criem memórias especiais</p>
                 </div>
               </div>
             </div>
@@ -157,7 +158,7 @@ export default function App() {
       <footer className="text-center py-8 px-4 mt-16">
         <div className="max-w-2xl mx-auto">
           <p className="text-sm text-muted-foreground mb-2">
-            ✨ Roteiro Surpresa - Versão Beta
+            ✨ Roteiro Surpresa
           </p>
           <p className="text-xs text-muted-foreground">
             Criado para casais que querem descobrir novos lugares e criar memórias especiais juntos.
