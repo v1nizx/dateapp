@@ -1,0 +1,2 @@
+export const projectId = 'https://tfraboksyrwwuglxrzvh.supabase.co'
+export const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmFib2tzeXJ3d3VnbHhyenZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMjMxOTcsImV4cCI6MjA3NTg5OTE5N30.g89m7ZyIc2V9jNYiJxP5GFXBH8_bqggkTlfp6hI92KE'

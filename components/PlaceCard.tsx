@@ -1,7 +1,7 @@
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ImageWithFallback } from "./figma/imageWithFallback";
 import { MapPin, ExternalLink, Star, Clock, DollarSign } from "lucide-react";
 
 interface Place {
