@@ -29,11 +29,10 @@ Uma aplicação web para casais descobrirem lugares especiais para seus encontro
 ## 🛠️ Tecnologias
 
 - **React 18** com TypeScript
-- **Vite** para desenvolvimento rápido
 - **Tailwind CSS** para estilização
 - **Radix UI** para componentes acessíveis
 - **Lucide React** para ícones elegantes
-- **Sonner** para notificações
+- **API DO GEMINI** para gerar recomendaçoes e mostrar a localização
 
 ## 📦 Instalação
 
@@ -75,8 +74,8 @@ npm run dev
 
 ## 💡 Contribuindo
 
-Sugestões de lugares para adicionar à base de dados são sempre bem-vindas! 
+Sugestões de melhorias e otimizações
 
 ---
 
-💕 Feito com amor para casais que querem descobrir novos lugares juntos
+😉 Em breve disponivel na versão app!
