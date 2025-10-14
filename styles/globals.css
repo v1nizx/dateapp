@@ -56,3 +56,49 @@
     color: hsl(var(--foreground));
   }
 }
+
+/* Melhorar visualização dos toasts do Sonner */
+[data-sonner-toast] {
+  background-color: white !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+[data-sonner-toast][data-type="loading"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background-color: rgba(240, 253, 244, 0.95) !important;
+  border-color: rgb(187, 247, 208) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: rgba(254, 242, 242, 0.95) !important;
+  border-color: rgb(254, 202, 202) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background-color: rgba(239, 246, 255, 0.95) !important;
+  border-color: rgb(191, 219, 254) !important;
+}
+
+[data-sonner-toaster] {
+  z-index: 9999 !important;
+}
+
+/* Garantir que o texto seja sempre legível */
+[data-sonner-toast] * {
+  color: inherit !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 0.8125rem !important;
+  opacity: 0.9 !important;
+}

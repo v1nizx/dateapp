@@ -203,11 +203,14 @@ export default function App() {
     // Get user location if not available
     let location = userLocation;
     if (!location) {
-      toast.info('Solicitando localização', {
+      const locationToast = toast.loading('Solicitando localização...', {
         description: 'Precisamos saber onde você está para encontrar lugares próximos.',
         icon: '📍'
       });
+      
       location = await requestLocation();
+      
+      toast.dismiss(locationToast);
       
       if (!location) {
         setIsLoading(false);
@@ -216,7 +219,7 @@ export default function App() {
     }
 
     // Show searching message
-    toast.info('Buscando recomendações', {
+    const searchToast = toast.loading('Buscando recomendações...', {
       description: 'A IA está analisando os melhores lugares para vocês...',
       icon: '🤖'
     });
@@ -227,6 +230,9 @@ export default function App() {
       latitude: location.latitude,
       longitude: location.longitude
     });
+    
+    // Dismiss search toast
+    toast.dismiss(searchToast);
     
     if (!places || places.length === 0) {
       toast.error('Nenhum lugar encontrado', {
@@ -253,7 +259,8 @@ export default function App() {
 
     toast.success('Surpresa preparada!', {
       description: `Gemini encontrou ${placesWithImages.length} lugares especiais para vocês!`,
-      icon: '✨'
+      icon: '✨',
+      duration: 3000
     });
     
   } catch (error) {
