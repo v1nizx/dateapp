@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { ImageWithFallback } from "./figma/imageWithFallback";
 import { MapPin, ExternalLink, Star, Clock, DollarSign } from "lucide-react";
 
 interface Place {
@@ -40,31 +40,83 @@ const typeLabels = {
 };
 
 export function PlaceCard({ place, onNewSuggestion }: PlaceCardProps) {
+  const [imageError, setImageError] = useState(false);
+
   const handleMapClick = () => {
     window.open(place.mapUrl, '_blank');
   };
 
+  // Gradientes bonitos por tipo
+  const gradientsByType: Record<string, string> = {
+    'gastronomia': 'bg-gradient-to-br from-orange-400 to-pink-600',
+    'cultura': 'bg-gradient-to-br from-purple-400 to-blue-600',
+    'ao-ar-livre': 'bg-gradient-to-br from-green-400 to-teal-600',
+    'aventura': 'bg-gradient-to-br from-red-400 to-orange-600',
+    'casual': 'bg-gradient-to-br from-pink-400 to-purple-600',
+  };
+
+  const getGradient = (type: string) => {
+    return gradientsByType[type] || gradientsByType['gastronomia'];
+  };
+
+  const getEmojiForType = (type: string) => {
+    const emojis: Record<string, string> = {
+      'gastronomia': '🍽️',
+      'cultura': '🎭',
+      'ao-ar-livre': '🌳',
+      'aventura': '⚡',
+      'casual': '☕',
+    };
+    return emojis[type] || '🍽️';
+  };
+
   return (
     <Card className="w-full max-w-2xl mx-auto overflow-hidden">
-      <div className="relative">
-        <ImageWithFallback
-          src={place.imageUrl}
-          alt={place.name}
-          className="w-full h-64 object-cover"
-        />
-        <div className="absolute top-4 right-4 flex gap-2">
-          <Badge className="bg-black/70 text-white">
-            {budgetLabels[place.budget as keyof typeof budgetLabels]}
-          </Badge>
-          <Badge variant="secondary" className="bg-black/70 text-white">
-            {typeLabels[place.type as keyof typeof typeLabels]}
-          </Badge>
+      {/* Imagem do lugar ou gradiente fallback */}
+      {place.imageUrl && !imageError ? (
+        <div className="relative h-64 w-full overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={place.imageUrl}
+            alt={place.name}
+            className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
+          />
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Badge className="bg-black/70 text-white">
+              {budgetLabels[place.budget as keyof typeof budgetLabels]}
+            </Badge>
+            <Badge variant="secondary" className="bg-black/70 text-white">
+              {typeLabels[place.type as keyof typeof typeLabels]}
+            </Badge>
+          </div>
+          <div className="absolute bottom-4 left-4 flex items-center gap-1 bg-black/70 text-white px-2 py-1 rounded">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm">{place.rating}</span>
+          </div>
         </div>
-        <div className="absolute bottom-4 left-4 flex items-center gap-1 bg-black/70 text-white px-2 py-1 rounded">
-          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm">{place.rating}</span>
+      ) : (
+        <div className={`relative h-64 w-full ${getGradient(place.type)} flex items-center justify-center`}>
+          <div className="text-center text-white">
+            <div className="text-6xl mb-2">
+              {getEmojiForType(place.type)}
+            </div>
+            <p className="text-lg font-medium opacity-90">{place.name}</p>
+          </div>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
+              {budgetLabels[place.budget as keyof typeof budgetLabels]}
+            </Badge>
+            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
+              {typeLabels[place.type as keyof typeof typeLabels]}
+            </Badge>
+          </div>
+          <div className="absolute bottom-4 left-4 flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm">{place.rating}</span>
+          </div>
         </div>
-      </div>
+      )}
       
       <CardContent className="p-6 space-y-4">
         <div>

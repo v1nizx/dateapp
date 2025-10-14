@@ -45,49 +45,51 @@ export class PlacesService {
   static async getCurrentLocation(): Promise<{ latitude: number; longitude: number }> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocalização não é suportada neste navegador'))
-        return
+        const error = new Error('Geolocalização não é suportada neste navegador');
+        Object.assign(error, { type: 'NOT_SUPPORTED' });
+        reject(error);
+        return;
       }
 
-      const options = {
+      const options: PositionOptions = {
         enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 300000
-      }
+        timeout: 10000, // 10 segundos
+        maximumAge: 300000 // 5 minutos
+      };
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
           resolve({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
-          })
+          });
         },
-        (error) => {
-          let errorMessage = 'Erro ao obter localização'
-          let errorType = 'UNKNOWN'
+        (positionError) => {
+          let errorMessage = 'Erro ao obter localização';
+          let errorType = 'UNKNOWN';
           
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'PERMISSION_DENIED'
-              errorType = 'PERMISSION_DENIED'
-              break
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Localização indisponível. Verifique se o GPS está ativado.'
-              errorType = 'POSITION_UNAVAILABLE'
-              break
-            case error.TIMEOUT:
-              errorMessage = 'Tempo limite excedido ao obter localização.'
-              errorType = 'TIMEOUT'
-              break
+          switch (positionError.code) {
+            case positionError.PERMISSION_DENIED:
+              errorMessage = 'Permissão de localização negada';
+              errorType = 'PERMISSION_DENIED';
+              break;
+            case positionError.POSITION_UNAVAILABLE:
+              errorMessage = 'Localização indisponível. Verifique suas configurações.';
+              errorType = 'POSITION_UNAVAILABLE';
+              break;
+            case positionError.TIMEOUT:
+              errorMessage = 'Tempo esgotado ao obter localização';
+              errorType = 'TIMEOUT';
+              break;
           }
           
-          const customError = new Error(errorMessage) as Error & { type: string }
-          customError.type = errorType
-          reject(customError)
+          const error = new Error(errorMessage);
+          Object.assign(error, { type: errorType });
+          reject(error);
         },
         options
-      )
-    })
+      );
+    });
   }
 
   static getRandomPlace(places: Place[]): Place | null {
