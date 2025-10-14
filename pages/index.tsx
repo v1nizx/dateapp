@@ -31,7 +31,7 @@ export default function App() {
   };
 
   const getImageForType = (type: string): string => {
-  // Arrays com múltiplas imagens para cada tipo
+  // Arrays com múltiplas imagens para cada tipo de filtro
   const imagesByType: Record<string, string[]> = {
     'gastronomia': [
       'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1080&q=80', // Restaurant elegant table
