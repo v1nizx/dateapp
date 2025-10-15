@@ -1,0 +1,11 @@
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="culturaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a18cd1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fbc2eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#culturaGrad)"/>
+  <text x="600" y="360" font-family="Arial, sans-serif" font-size="120" fill="white" text-anchor="middle" opacity="0.9">🎭</text>
+  <text x="600" y="480" font-family="Arial, sans-serif" font-size="48" fill="white" text-anchor="middle" font-weight="bold">Cultura</text>
+</svg>

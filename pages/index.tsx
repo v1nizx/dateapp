@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FilterSection } from '../components/FilterSection';
 import { PlaceCard } from '../components/PlaceCard';
 import { Place, getFilteredPlaces, getRandomPlace } from '../data/mockPlaces';
@@ -6,6 +6,8 @@ import { PlacesService } from '../services/placeService';
 import { Toaster } from '../components/ui/sonner';
 import { toast } from 'sonner';
 import { Heart, Sparkles, MapPin, AlertTriangle } from 'lucide-react';
+import { searchPexelsPhotos } from '../utils/pexels';
+import { getCachedImage } from '../utils/smartImageSearch';
 
 export default function App() {
   const [filters, setFilters] = useState({
@@ -22,6 +24,42 @@ export default function App() {
   const [useFallbackMode, setUseFallbackMode] = useState(false);
   const [allPlaces, setAllPlaces] = useState<Place[]>([]);
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
+  const [imagesByType, setImagesByType] = useState<Record<string, string>>({
+    'gastronomia': '',
+    'cultura': '',
+    'ao-ar-livre': '',
+    'aventura': '',
+    'casual': '',
+  });
+
+  // Pré-carregar as imagens do Pexels quando o componente montar
+  useEffect(() => {
+    const loadImages = async () => {
+      const searchQueries: Record<string, string> = {
+        'gastronomia': 'restaurant food elegant dinner',
+        'cultura': 'museum art gallery culture',
+        'ao-ar-livre': 'nature outdoor landscape forest',
+        'aventura': 'adventure water park fun activities',
+        'casual': 'coffee cafe cozy place',
+      };
+
+      const loadedImages: Record<string, string> = {};
+
+      for (const [type, query] of Object.entries(searchQueries)) {
+        try {
+          const photo = await searchPexelsPhotos(query);
+          loadedImages[type] = photo?.src.large || '/images/fallback-placeholder.jpg';
+        } catch (error) {
+          console.error(`Erro ao carregar imagem para ${type}:`, error);
+          loadedImages[type] = '/images/fallback-placeholder.jpg';
+        }
+      }
+
+      setImagesByType(loadedImages);
+    };
+
+    loadImages();
+  }, []);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({
@@ -31,71 +69,25 @@ export default function App() {
   };
 
   const getImageForType = (type: string): string => {
-  // Arrays com múltiplas imagens para cada tipo de filtro
-  const imagesByType: Record<string, string[]> = {
-    'gastronomia': [
-      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1080&q=80', // Restaurant elegant table
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1080&q=80', // Restaurant interior
-      'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=1080&q=80', // Romantic dinner setup
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1080&q=80', // Fine dining food
-      'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=1080&q=80', // Sushi and Japanese food
-      'https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?w=1080&q=80', // Pizza restaurant
-      'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1080&q=80', // Cozy restaurant
-      'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=1080&q=80', // Brunch coffee
-    ],
-    
-    'cultura': [
-      'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1080&q=80', // Museum interior
-      'https://images.unsplash.com/photo-1580130732478-3928a6b5e5a4?w=1080&q=80', // Art gallery
-      'https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=1080&q=80', // Theater seats
-      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1080&q=80', // Cinema
-      'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=1080&q=80', // Museum modern art
-      'https://images.unsplash.com/photo-1577895047328-88e6c88c4137?w=1080&q=80', // Concert hall
-      'https://images.unsplash.com/photo-1544306094-e2dcf9479da3?w=1080&q=80', // Art exhibition
-    ],
-    
-    'ao-ar-livre': [
-      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=80', // Forest path
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80', // Mountain lake
-      'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=1080&q=80', // Beach sunset
-      'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=1080&q=80', // Park couple walking
-      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1080&q=80', // Garden botanical
-      'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1080&q=80', // Lake scenic
-      'https://images.unsplash.com/photo-1511593358241-7eea1f3c84e5?w=1080&q=80', // Waterfall nature
-      'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1080&q=80', // Sunset beach couple
-    ],
-    
-    'aventura': [
-      'https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=1080&q=80', // Rock climbing
-      'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?w=1080&q=80', // Kayaking
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80', // Hiking mountain
-      'https://images.unsplash.com/photo-1551632811-561732d1e306?w=1080&q=80', // Zip line adventure
-      'https://images.unsplash.com/photo-1527933053326-89d1746b76b9?w=1080&q=80', // Amusement park
-      'https://images.unsplash.com/photo-1624948465027-6f188b4e9e55?w=1080&q=80', // Go kart racing
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=80', // Paintball action
-    ],
-    
-    'casual': [
-      'https://images.unsplash.com/photo-1559305616-3b04f3f6e9ae?w=1080&q=80', // Cozy cafe
-      'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=1080&q=80', // Coffee shop
-      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1080&q=80', // Bar lounge
-      'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=1080&q=80', // Ice cream shop
-      'https://images.unsplash.com/photo-1556742208-999815fca738?w=1080&q=80', // Bookstore cafe
-      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1080&q=80', // Coffee date
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=80', // Bar nightlife
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1080&q=80', // Brewery craft beer
-    ]
+    // Retorna a imagem pré-carregada do Pexels ou fallback
+    return imagesByType[type] || imagesByType['gastronomia'] || '/images/fallback-placeholder.jpg';
   };
 
-  // Pegar array de imagens do tipo, ou usar gastronomia como fallback
-  const imagesArray = imagesByType[type] || imagesByType['gastronomia'];
-  
-  // Selecionar uma imagem aleatória do array
-  const randomIndex = Math.floor(Math.random() * imagesArray.length);
-  
-  return imagesArray[randomIndex];
-};
-
+  const getImageForPlace = async (placeName: string, type: string, tags?: string[]): Promise<string> => {
+    try {
+      // Usa a função de busca inteligente com cache
+      const imageUrl = await getCachedImage({
+        name: placeName,
+        type: type,
+        tags: tags
+      });
+      
+      return imageUrl;
+    } catch (error) {
+      console.error(`Erro ao buscar imagem para ${placeName}:`, error);
+      return getImageForType(type);
+    }
+  };
 
   const requestLocation = async () => {
     if (userLocation) return userLocation;
@@ -185,7 +177,8 @@ export default function App() {
 
       await new Promise(resolve => setTimeout(resolve, 1200));
       
-      const imageUrl = getImageForType(randomPlace.type);
+      // Buscar imagem específica para o lugar usando busca inteligente
+      const imageUrl = await getImageForPlace(randomPlace.name, randomPlace.type, randomPlace.tags);
       const placeWithImage = {
         ...randomPlace,
         imageUrl
@@ -246,11 +239,22 @@ export default function App() {
     // Simulate some loading time for better UX
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Adicionar imagens fallback para todos os lugares
-    const placesWithImages = places.map(place => ({
-      ...place,
-      imageUrl: place.imageUrl || getImageForType(place.type)
-    }));
+    // Buscar imagens únicas para cada lugar usando busca inteligente
+    const placesWithImages = await Promise.all(
+      places.map(async (place) => {
+        // Se o lugar já tem imagem, usa ela
+        if (place.imageUrl && place.imageUrl.trim() !== '') {
+          return place;
+        }
+        
+        // Caso contrário, busca uma imagem específica no Pexels com busca inteligente
+        const imageUrl = await getImageForPlace(place.name, place.type, place.tags);
+        return {
+          ...place,
+          imageUrl
+        };
+      })
+    );
 
     // Salvar todos os lugares
     setAllPlaces(placesWithImages);

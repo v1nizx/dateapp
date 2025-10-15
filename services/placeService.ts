@@ -53,7 +53,7 @@ export class PlacesService {
 
       const options: PositionOptions = {
         enableHighAccuracy: false,
-        timeout: 10000, // 10 segundos
+        timeout: 30000, // 30 segundos
         maximumAge: 300000 // 5 minutos
       };
 

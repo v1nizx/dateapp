@@ -65,7 +65,7 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
 📝 PARA CADA LUGAR:
 - Nome completo do estabelecimento
 - Endereço completo (rua, número, bairro)
-- Descrição de por que é perfeito (2-3 frases)
+- Descrição de por que é perfeito (2-3 frases) - NÃO inclua referências numéricas entre colchetes [1], [2], etc
 - Avaliação (se disponível)
 - Horário de funcionamento
 - Sugestão de atividade romântica
@@ -86,7 +86,11 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
   ]
 }
 
-IMPORTANTE: BUSQUE informações REAIS na web. NÃO invente. Retorne APENAS JSON.`
+IMPORTANTE: 
+- BUSQUE informações REAIS na web. NÃO invente.
+- Retorne APENAS JSON válido.
+- NÃO inclua referências numéricas entre colchetes como [1], [2], [8, 9], etc. nas descrições ou qualquer campo de texto.
+- Escreva as descrições de forma natural, sem citações ou referências.`
 
   try {
     const result = await model.generateContent({
@@ -115,23 +119,30 @@ IMPORTANTE: BUSQUE informações REAIS na web. NÃO invente. Retorne APENAS JSON
       throw new Error('Formato de resposta inválido')
     }
     
-    const recommendations = jsonResponse.recommendations.map((rec: any, idx: number) => ({
-      id: `gemini-${Date.now()}-${idx}`,
-      name: rec.name || 'Lugar sem nome',
-      description: rec.description || 'Descrição não disponível',
-      address: rec.address || 'São Luís, MA',
-      mapUrl: `https://maps.google.com/maps?q=${encodeURIComponent(rec.name + ' ' + rec.address + ' São Luís MA')}`,
-      budget: filters.budget,
-      type: filters.type,
-      period: filters.period,
-      tags: ['romântico', 'gemini-recomendado'],
-      imageUrl: '',
-      rating: rec.rating || 0,
-      suggestedActivity: rec.romanticActivity || 'Aproveitem juntos',
-      openingHours: rec.openingHours || 'Consultar horários',
-      specialTip: rec.specialTip || '',
-      aiRecommended: true
-    }))
+    const recommendations = jsonResponse.recommendations.map((rec: any, idx: number) => {
+      // Remove referências numéricas entre colchetes [1], [2, 3], etc.
+      const cleanDescription = (rec.description || 'Descrição não disponível').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
+      const cleanActivity = (rec.romanticActivity || 'Aproveitem juntos').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
+      const cleanTip = (rec.specialTip || '').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
+      
+      return {
+        id: `gemini-${Date.now()}-${idx}`,
+        name: rec.name || 'Lugar sem nome',
+        description: cleanDescription.trim(),
+        address: rec.address || 'São Luís, MA',
+        mapUrl: `https://maps.google.com/maps?q=${encodeURIComponent(rec.name + ' ' + rec.address + ' São Luís MA')}`,
+        budget: filters.budget,
+        type: filters.type,
+        period: filters.period,
+        tags: ['romântico', 'gemini-recomendado'],
+        imageUrl: '',
+        rating: rec.rating || 0,
+        suggestedActivity: cleanActivity.trim(),
+        openingHours: rec.openingHours || 'Consultar horários',
+        specialTip: cleanTip.trim(),
+        aiRecommended: true
+      }
+    })
     
     return recommendations
     
