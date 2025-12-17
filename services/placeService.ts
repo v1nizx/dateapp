@@ -1,27 +1,27 @@
-import { projectId, publicAnonKey } from '../utils/info'
 import { Place } from '../data/mockPlaces'
 
 export interface PlaceFilters {
   budget: string
   type: string
   period: string
+  ambiente?: string
+  distancia?: string
+  temEstacionamento?: boolean
+  acessivel?: boolean
   latitude: number
   longitude: number
 }
 
 export class PlacesService {
-  private static readonly API_BASE_URL = `https://${projectId}.supabase.co/functions/v1`
-
-  // Função principal - APENAS GEMINI
+  // Função principal - usando API Route local (Vercel)
   static async searchPlaces(filters: PlaceFilters): Promise<Place[]> {
     try {
       console.log('🤖 Buscando recomendações com Gemini AI...', filters)
 
-      const response = await fetch(`${this.API_BASE_URL}/gemini-recommendations`, {
+      const response = await fetch('/api/recommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify(filters)
       })
@@ -67,7 +67,7 @@ export class PlacesService {
         (positionError) => {
           let errorMessage = 'Erro ao obter localização';
           let errorType = 'UNKNOWN';
-          
+
           switch (positionError.code) {
             case positionError.PERMISSION_DENIED:
               errorMessage = 'Permissão de localização negada';
@@ -82,7 +82,7 @@ export class PlacesService {
               errorType = 'TIMEOUT';
               break;
           }
-          
+
           const error = new Error(errorMessage);
           Object.assign(error, { type: errorType });
           reject(error);
