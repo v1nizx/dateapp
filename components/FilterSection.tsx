@@ -78,7 +78,7 @@ export function FilterSection({ filters, onFilterChange, onSurprise, isLoading }
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-pink-500" />
-            <label className="text-sm font-semibold text-gray-700">Quanto querem investir?</label>
+            <label className="text-sm font-semibold text-gray-700">Quanto desejam gastar?</label>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {budgetOptions.map((option) => (
