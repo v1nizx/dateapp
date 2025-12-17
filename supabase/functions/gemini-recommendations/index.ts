@@ -7,6 +7,10 @@ interface RecommendationRequest {
   budget: string
   type: string
   period: string
+  ambiente?: string
+  distancia?: string
+  temEstacionamento?: boolean
+  acessivel?: boolean
   latitude: number
   longitude: number
 }
@@ -25,11 +29,23 @@ const TYPE_DESC: Record<string, string> = {
   'casual': 'lugares casuais e descontraídos, como cafés, bares tranquilos, lounges, sorveterias'
 }
 
+const AMBIENTE_DESC: Record<string, string> = {
+  'intimo': 'íntimo e reservado, com mesas afastadas, iluminação baixa, ambiente romântico e privativo',
+  'animado': 'animado e movimentado, com música, outras pessoas, ambiente descontraído e festivo',
+  'tranquilo': 'tranquilo e relaxante, sem música alta, ambiente calmo e aconchegante'
+}
+
+const DISTANCIA_DESC: Record<string, string> = {
+  'perto': 'muito próximo, no máximo 5km de distância',
+  'medio': 'distância moderada, entre 5km e 15km',
+  'longe': 'mais distante, acima de 15km, ideal para explorar novos lugares'
+}
+
 async function getGeminiRecommendations(filters: RecommendationRequest): Promise<any[]> {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY!)
-  
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-2.0-flash',
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
     generationConfig: {
       temperature: 0.8,
       topP: 0.95,
@@ -37,11 +53,17 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
       maxOutputTokens: 8192,
     }
   })
-  
+
   const budgetDesc = BUDGET_DESC[filters.budget] || 'variado'
   const typeDesc = TYPE_DESC[filters.type] || 'variado'
   const periodDesc = filters.period === 'dia' ? 'durante o dia' : 'à noite'
-  
+
+  // Novos filtros opcionais
+  const ambienteDesc = filters.ambiente ? AMBIENTE_DESC[filters.ambiente] : ''
+  const distanciaDesc = filters.distancia ? DISTANCIA_DESC[filters.distancia] : ''
+  const estacionamentoReq = filters.temEstacionamento ? 'DEVE ter estacionamento próprio ou fácil acesso a estacionamento' : ''
+  const acessivelReq = filters.acessivel ? 'DEVE ser acessível para cadeirantes (rampas, banheiros adaptados, etc)' : ''
+
   const prompt = `Você é um especialista em recomendações românticas para casais em São Luís, Maranhão, Brasil.
 
 🎯 MISSÃO: Encontre os 5 MELHORES lugares REAIS em São Luís/MA para um casal com as seguintes preferências:
@@ -54,6 +76,10 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
 💰 ORÇAMENTO: ${budgetDesc}
 🎭 TIPO DE EXPERIÊNCIA: ${typeDesc}
 ⏰ PERÍODO: ${periodDesc}
+${ambienteDesc ? `🎵 AMBIENTE: ${ambienteDesc}` : ''}
+${distanciaDesc ? `📏 DISTÂNCIA: ${distanciaDesc}` : ''}
+${estacionamentoReq ? `🅿️ ${estacionamentoReq}` : ''}
+${acessivelReq ? `♿ ${acessivelReq}` : ''}
 
 🔍 INSTRUÇÕES:
 1. Pesquise na web lugares REAIS e ATUAIS em São Luís/MA
@@ -61,6 +87,8 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
 3. Ambiente adequado para casais (romântico)
 4. Preços compatíveis com o orçamento
 5. Horário de funcionamento adequado (${periodDesc})
+${filters.ambiente ? `6. O ambiente deve ser ${ambienteDesc}` : ''}
+${filters.distancia ? `7. Respeite a preferência de distância: ${distanciaDesc}` : ''}
 
 📝 PARA CADA LUGAR:
 - Nome completo do estabelecimento
@@ -70,6 +98,8 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
 - Horário de funcionamento
 - Sugestão de atividade romântica
 - Dica especial
+- Se tem estacionamento (true/false)
+- Se é acessível para cadeirantes (true/false)
 
 🎨 RETORNE JSON NESTE FORMATO:
 {
@@ -81,7 +111,9 @@ async function getGeminiRecommendations(filters: RecommendationRequest): Promise
       "rating": 4.5,
       "openingHours": "Horários",
       "romanticActivity": "Sugestão romântica",
-      "specialTip": "Dica especial"
+      "specialTip": "Dica especial",
+      "temEstacionamento": true,
+      "acessivel": false
     }
   ]
 }
@@ -100,9 +132,9 @@ IMPORTANTE:
 
     const response = result.response
     const responseText = response.text()
-    
+
     console.log('Gemini respondeu:', responseText.substring(0, 300))
-    
+
     let jsonResponse
     try {
       jsonResponse = JSON.parse(responseText)
@@ -114,17 +146,17 @@ IMPORTANTE:
         throw new Error('Gemini não retornou JSON válido')
       }
     }
-    
+
     if (!jsonResponse.recommendations || !Array.isArray(jsonResponse.recommendations)) {
       throw new Error('Formato de resposta inválido')
     }
-    
+
     const recommendations = jsonResponse.recommendations.map((rec: any, idx: number) => {
       // Remove referências numéricas entre colchetes [1], [2, 3], etc.
       const cleanDescription = (rec.description || 'Descrição não disponível').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
       const cleanActivity = (rec.romanticActivity || 'Aproveitem juntos').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
       const cleanTip = (rec.specialTip || '').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
-      
+
       return {
         id: `gemini-${Date.now()}-${idx}`,
         name: rec.name || 'Lugar sem nome',
@@ -140,12 +172,14 @@ IMPORTANTE:
         suggestedActivity: cleanActivity.trim(),
         openingHours: rec.openingHours || 'Consultar horários',
         specialTip: cleanTip.trim(),
-        aiRecommended: true
+        aiRecommended: true,
+        temEstacionamento: rec.temEstacionamento || false,
+        acessivel: rec.acessivel || false
       }
     })
-    
+
     return recommendations
-    
+
   } catch (error) {
     console.error('Erro ao gerar recomendações:', error)
     throw error
@@ -162,33 +196,42 @@ serve(async (req) => {
       }
     })
   }
-  
+
   try {
     const filters: RecommendationRequest = await req.json()
-    
+
     if (!filters.budget || !filters.type || !filters.period || !filters.latitude || !filters.longitude) {
       return new Response(
         JSON.stringify({ error: 'Filtros incompletos' }),
         { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       )
     }
-    
-    console.log('🤖 Processando recomendações...')
+
+    console.log('🤖 Processando recomendações com filtros:', {
+      budget: filters.budget,
+      type: filters.type,
+      period: filters.period,
+      ambiente: filters.ambiente,
+      distancia: filters.distancia,
+      temEstacionamento: filters.temEstacionamento,
+      acessivel: filters.acessivel
+    })
+
     const recommendations = await getGeminiRecommendations(filters)
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         places: recommendations,
         totalFound: recommendations.length,
         source: 'gemini-google-search'
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     )
-    
+
   } catch (error) {
     console.error('❌ Erro:', error)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       }),
       { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
