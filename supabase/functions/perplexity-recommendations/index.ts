@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1'
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY')
 
 interface RecommendationRequest {
   budget: string
@@ -41,18 +40,10 @@ const DISTANCIA_DESC: Record<string, string> = {
   'longe': 'mais distante, acima de 15km, ideal para explorar novos lugares'
 }
 
-async function getGeminiRecommendations(filters: RecommendationRequest): Promise<any[]> {
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY!)
-
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-    }
-  })
+async function getPerplexityRecommendations(filters: RecommendationRequest): Promise<any[]> {
+  if (!PERPLEXITY_API_KEY) {
+    throw new Error('PERPLEXITY_API_KEY não configurada')
+  }
 
   const budgetDesc = BUDGET_DESC[filters.budget] || 'variado'
   const typeDesc = TYPE_DESC[filters.type] || 'variado'
@@ -125,15 +116,39 @@ IMPORTANTE:
 - Escreva as descrições de forma natural, sem citações ou referências.`
 
   try {
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      tools: [{ googleSearch: {} }]
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente especializado em recomendações de lugares românticos. Sempre responda em JSON válido.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4096
+      })
     })
 
-    const response = result.response
-    const responseText = response.text()
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Erro Perplexity:', errorText)
+      throw new Error(`Erro na API Perplexity: ${response.status}`)
+    }
 
-    console.log('Gemini respondeu:', responseText.substring(0, 300))
+    const data = await response.json()
+    const responseText = data.choices[0]?.message?.content || ''
+
+    console.log('Perplexity respondeu:', responseText.substring(0, 300))
 
     let jsonResponse
     try {
@@ -143,7 +158,7 @@ IMPORTANTE:
       if (jsonMatch) {
         jsonResponse = JSON.parse(jsonMatch[0])
       } else {
-        throw new Error('Gemini não retornou JSON válido')
+        throw new Error('Perplexity não retornou JSON válido')
       }
     }
 
@@ -158,7 +173,7 @@ IMPORTANTE:
       const cleanTip = (rec.specialTip || '').replace(/\s*\[\d+(,\s*\d+)*\]/g, '')
 
       return {
-        id: `gemini-${Date.now()}-${idx}`,
+        id: `pplx-${Date.now()}-${idx}`,
         name: rec.name || 'Lugar sem nome',
         description: cleanDescription.trim(),
         address: rec.address || 'São Luís, MA',
@@ -166,7 +181,7 @@ IMPORTANTE:
         budget: filters.budget,
         type: filters.type,
         period: filters.period,
-        tags: ['romântico', 'gemini-recomendado'],
+        tags: ['romântico', 'perplexity-recomendado'],
         imageUrl: '',
         rating: rec.rating || 0,
         suggestedActivity: cleanActivity.trim(),
@@ -217,13 +232,13 @@ serve(async (req) => {
       acessivel: filters.acessivel
     })
 
-    const recommendations = await getGeminiRecommendations(filters)
+    const recommendations = await getPerplexityRecommendations(filters)
 
     return new Response(
       JSON.stringify({
         places: recommendations,
         totalFound: recommendations.length,
-        source: 'gemini-google-search'
+        source: 'perplexity-search'
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     )

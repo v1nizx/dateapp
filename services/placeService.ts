@@ -16,7 +16,6 @@ export class PlacesService {
   // Função principal - usando API Route local (Vercel)
   static async searchPlaces(filters: PlaceFilters): Promise<Place[]> {
     try {
-      console.log('🤖 Buscando recomendações com Gemini AI...', filters)
 
       const response = await fetch('/api/recommendations', {
         method: 'POST',
@@ -33,7 +32,6 @@ export class PlacesService {
       }
 
       const data = await response.json()
-      console.log(`✨ Gemini encontrou ${data.places?.length || 0} lugares`)
 
       return data.places || []
     } catch (error) {

@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 interface RecommendationRequest {
   budget: string;
@@ -41,22 +40,10 @@ const DISTANCIA_DESC: Record<string, string> = {
   'longe': 'mais distante, acima de 15km'
 };
 
-async function getGeminiRecommendations(filters: RecommendationRequest) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY não configurada');
+async function getPerplexityRecommendations(filters: RecommendationRequest) {
+  if (!PERPLEXITY_API_KEY) {
+    throw new Error('PERPLEXITY_API_KEY não configurada');
   }
-
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-    }
-  });
 
   const budgetDesc = BUDGET_DESC[filters.budget] || 'variado';
   const typeDesc = TYPE_DESC[filters.type] || 'variado';
@@ -118,10 +105,39 @@ ${acessivelReq ? `♿ ${acessivelReq}` : ''}
 
 IMPORTANTE: Retorne APENAS JSON válido. NÃO inclua [1], [2] nas descrições.`;
 
-  const result = await model.generateContent(prompt);
-  const responseText = result.response.text();
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'sonar',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um assistente especializado em recomendações de lugares românticos. Sempre responda em JSON válido.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4096
+    })
+  });
 
-  console.log('Gemini respondeu:', responseText.substring(0, 300));
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro Perplexity:', errorText);
+    throw new Error(`Erro na API Perplexity: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const responseText = data.choices[0]?.message?.content || '';
+
+  console.log('Perplexity respondeu:', responseText.substring(0, 300));
 
   let jsonResponse;
   try {
@@ -131,7 +147,7 @@ IMPORTANTE: Retorne APENAS JSON válido. NÃO inclua [1], [2] nas descrições.`
     if (jsonMatch) {
       jsonResponse = JSON.parse(jsonMatch[0]);
     } else {
-      throw new Error('Gemini não retornou JSON válido');
+      throw new Error('Perplexity não retornou JSON válido');
     }
   }
 
@@ -143,7 +159,7 @@ IMPORTANTE: Retorne APENAS JSON válido. NÃO inclua [1], [2] nas descrições.`
     const cleanText = (text: string) => (text || '').replace(/\s*\[\d+(,\s*\d+)*\]/g, '').trim();
 
     return {
-      id: `gemini-${Date.now()}-${idx}`,
+      id: `pplx-${Date.now()}-${idx}`,
       name: rec.name || 'Lugar sem nome',
       description: cleanText(rec.description) || 'Descrição não disponível',
       address: rec.address || 'São Luís, MA',
@@ -151,7 +167,7 @@ IMPORTANTE: Retorne APENAS JSON válido. NÃO inclua [1], [2] nas descrições.`
       budget: filters.budget,
       type: filters.type,
       period: filters.period,
-      tags: ['romântico', 'gemini-recomendado'],
+      tags: ['romântico', 'perplexity-recomendado'],
       imageUrl: '',
       rating: rec.rating || 0,
       suggestedActivity: cleanText(rec.romanticActivity) || 'Aproveitem juntos',
@@ -191,12 +207,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       period: filters.period
     });
 
-    const recommendations = await getGeminiRecommendations(filters);
+    const recommendations = await getPerplexityRecommendations(filters);
 
     return res.status(200).json({
       places: recommendations,
       totalFound: recommendations.length,
-      source: 'gemini-vercel'
+      source: 'perplexity-vercel'
     });
 
   } catch (error) {
